@@ -9,7 +9,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -60,40 +59,14 @@ public class StationAcceptanceTest {
     @Test
     void selectStations(){
         // Given
-        ExtractableResponse<Response> response = createStation("강남역");
-        assertThat(response.statusCode()).isEqualTo(HttpStatus.CREATED.value());
-
-        ExtractableResponse<Response> response2 =  createStation("서초역");
-        assertThat(response2.statusCode()).isEqualTo(HttpStatus.CREATED.value());
+        createStation("강남역");
+        createStation("서초역");
 
         // When
         List<String> stationNames = getStations();
 
         // Then
         assertThat(stationNames).contains("강남역", "서초역");
-    }
-
-    // 지하철역 이름으로 지하철역 생성
-    private ExtractableResponse<Response> createStation(String stationName){
-        StationRequest stationRequest = new StationRequest();
-        stationRequest.setName(stationName);
-
-        return RestAssured.given().log().all()
-                        .body(stationRequest)
-                        .contentType(MediaType.APPLICATION_JSON_VALUE)
-                        .when().post("/stations")
-                        .then().log().all()
-                        .extract();
-    }
-
-    // 모든 지하철 목록 조회
-    private List<String> getStations(){
-        return RestAssured.given().log().all()
-                .when().get("/stations")
-                .then().log().all()
-                .statusCode(HttpStatus.OK.value())
-                .extract()
-                .jsonPath().getList("name", String.class);
     }
 
     /**
@@ -106,22 +79,48 @@ public class StationAcceptanceTest {
     void deleteStations(){
         // Given
         ExtractableResponse<Response> response = createStation("서초역");
-        assertThat(response.statusCode()).isEqualTo(HttpStatus.CREATED.value());
 
         long id = response.body().jsonPath().getLong("id");
 
-        ExtractableResponse<Response> response1 =
-                RestAssured.given().log().all()
-                        .contentType(MediaType.APPLICATION_JSON_VALUE)
-                        .when().delete("/stations/{id}", id)
-                        .then().log().all()
-                        .extract();
-        assertThat(response.statusCode()).isEqualTo(HttpStatus.CREATED.value());
-
         // When
-        List<String> stationNames = getStations();
+        deleteStation(id);
 
         // Then
+        List<String> stationNames = getStations();
         assertThat(stationNames).doesNotContain("서초역");
     }
+
+    // 지하철역 이름으로 지하철역 생성
+    private ExtractableResponse<Response> createStation(String stationName){
+        Map<String, String> params = new HashMap<>();
+        params.put("name", stationName);
+
+        return RestAssured.given().log().all()
+                .body(params)
+                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                .when().post("/stations")
+                .then().log().all()
+                .statusCode(HttpStatus.CREATED.value())
+                .extract();
+    }
+
+    // 모든 지하철 목록 조회
+    private List<String> getStations(){
+        return RestAssured.given().log().all()
+                .when().get("/stations")
+                .then().log().all()
+                .statusCode(HttpStatus.OK.value())
+                .extract()
+                .jsonPath().getList("name", String.class);
+    }
+
+    private void deleteStation(Long id){
+        RestAssured.given().log().all()
+                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                .when().delete("/stations/{id}", id)
+                .then().log().all()
+                .statusCode(HttpStatus.NO_CONTENT.value())
+                .extract();
+    }
+
 }

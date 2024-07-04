@@ -7,8 +7,4 @@ public class StationRequest {
         return name;
     }
 
-    public String setName(String name) {
-        this.name = name;
-        return name;
-    }
 }
