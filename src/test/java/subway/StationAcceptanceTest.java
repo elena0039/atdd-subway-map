@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.test.annotation.DirtiesContext;
 
 import java.util.HashMap;
 import java.util.List;
@@ -17,6 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("지하철역 관련 기능")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public class StationAcceptanceTest {
     /**
      * When 지하철역을 생성하면
@@ -78,20 +80,19 @@ public class StationAcceptanceTest {
     @Test
     void deleteStations(){
         // Given
-        ExtractableResponse<Response> response = createStation("서초역");
-
-        long id = response.body().jsonPath().getLong("id");
+        long id = createStation("서초역");
 
         // When
         deleteStation(id);
 
         // Then
         List<String> stationNames = getStations();
+
         assertThat(stationNames).doesNotContain("서초역");
     }
 
     // 지하철역 이름으로 지하철역 생성
-    private ExtractableResponse<Response> createStation(String stationName){
+    public static Long createStation(String stationName){
         Map<String, String> params = new HashMap<>();
         params.put("name", stationName);
 
@@ -101,7 +102,8 @@ public class StationAcceptanceTest {
                 .when().post("/stations")
                 .then().log().all()
                 .statusCode(HttpStatus.CREATED.value())
-                .extract();
+                .extract()
+                .body().jsonPath().getLong("id");
     }
 
     // 모든 지하철 목록 조회
@@ -114,6 +116,7 @@ public class StationAcceptanceTest {
                 .jsonPath().getList("name", String.class);
     }
 
+    // 특정 지하철 삭제
     private void deleteStation(Long id){
         RestAssured.given().log().all()
                 .contentType(MediaType.APPLICATION_JSON_VALUE)

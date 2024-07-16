@@ -1,4 +1,4 @@
-package subway;
+package subway.model.request;
 
 public class StationRequest {
     private String name;
